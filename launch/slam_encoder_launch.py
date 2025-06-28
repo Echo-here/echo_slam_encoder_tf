@@ -37,7 +37,7 @@ def generate_launch_description():
     )
 
     reader_node = Node(
-        package='echo_slam_encoder_tf,
+        package='echo_slam_encoder_tf',
         executable='slam_encoder_reader_node',
         name='slam_encoder_reader_node',
         output='screen'
