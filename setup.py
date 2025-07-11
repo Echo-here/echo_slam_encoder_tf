@@ -10,7 +10,9 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
-        ('share/' + package_name + '/launch', ['launch/slam_encoder_launch.py']),
+        ('share/' + package_name + '/launch', ['launch/slam_encoder.launch.py', 'launch/slam_gazebo.launch.py']),
+        ('share/' + package_name + '/config', ['config/diff_drive_controller.yml']),
+        ('share/' + package_name + '/urdf', ['urdf/robot.xacro']),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -23,6 +25,8 @@ setup(
         'console_scripts': [
             'slam_encoder_reader_node = echo_slam_encoder_tf.slam_encoder_reader_node:main',
             'slam_encoder_odom_node = echo_slam_encoder_tf.slam_encoder_odom_node:main',
+            'slam_encoder_dummy_node = echo_slam_encoder_tf.slam_encoder_dummy_node:main',
+            'slam_encoder_gazebo_node = echo_slam_encoder_tf.slam_encoder_gazebo_node:main',
         ],
     },
 )
