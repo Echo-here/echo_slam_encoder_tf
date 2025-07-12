@@ -11,7 +11,7 @@ setup(
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
         ('share/' + package_name + '/launch', ['launch/slam_encoder.launch.py', 'launch/slam_gazebo.launch.py']),
-        ('share/' + package_name + '/config', ['config/diff_drive_controller.yml']),
+        ('share/' + package_name + '/config', ['config/diff_drive_controller.yaml']),
         ('share/' + package_name + '/urdf', ['urdf/robot.xacro']),
     ],
     install_requires=['setuptools'],

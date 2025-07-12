@@ -89,47 +89,47 @@
     <origin xyz="0.15 0 0.15" rpy="0 0 0"/>
   </joint>
 
+  <!-- ros2_control interface 선언 -->
+  <ros2_control name="MyRobotHardware" type="system">
+    <hardware>
+      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+    </hardware>
+    <joint name="left_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="velocity"/>
+      <state_interface name="position"/>
+    </joint>
+    <joint name="right_wheel_joint">
+      <command_interface name="velocity"/>
+      <state_interface name="velocity"/>
+      <state_interface name="position"/>
+    </joint>
+  </ros2_control>
+
+  <!-- transmission 선언 (필수) -->
+  <transmission name="left_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="left_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="left_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <transmission name="right_wheel_trans">
+    <type>transmission_interface/SimpleTransmission</type>
+    <joint name="right_wheel_joint">
+      <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
+    </joint>
+    <actuator name="right_motor">
+      <mechanicalReduction>1</mechanicalReduction>
+    </actuator>
+  </transmission>
+
+  <!-- Gazebo 플러그인 삽입 (필수) -->
+  <gazebo>
+    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so"/>
+  </gazebo>
+
 </robot>
-
-<!-- ros2_control interface 선언 -->
-<ros2_control name="MyRobotHardware" type="system">
-  <hardware>
-    <plugin>gazebo_ros2_control/GazeboSystem</plugin>
-  </hardware>
-  <joint name="left_wheel_joint">
-    <command_interface name="velocity"/>
-    <state_interface name="velocity"/>
-    <state_interface name="position"/>
-  </joint>
-  <joint name="right_wheel_joint">
-    <command_interface name="velocity"/>
-    <state_interface name="velocity"/>
-    <state_interface name="position"/>
-  </joint>
-</ros2_control>
-
-<!-- transmission 선언 (필수) -->
-<transmission name="left_wheel_trans">
-  <type>transmission_interface/SimpleTransmission</type>
-  <joint name="left_wheel_joint">
-    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-  </joint>
-  <actuator name="left_motor">
-    <mechanicalReduction>1</mechanicalReduction>
-  </actuator>
-</transmission>
-
-<transmission name="right_wheel_trans">
-  <type>transmission_interface/SimpleTransmission</type>
-  <joint name="right_wheel_joint">
-    <hardwareInterface>hardware_interface/VelocityJointInterface</hardwareInterface>
-  </joint>
-  <actuator name="right_motor">
-    <mechanicalReduction>1</mechanicalReduction>
-  </actuator>
-</transmission>
-
-<!-- Gazebo 플러그인 삽입 (필수) -->
-<gazebo>
-  <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so"/>
-</gazebo>

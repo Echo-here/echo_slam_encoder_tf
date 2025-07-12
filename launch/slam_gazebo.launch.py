@@ -1,14 +1,19 @@
 from launch import LaunchDescription
-from launch.actions import IncludeLaunchDescription, ExecuteProcess
+from launch.actions import IncludeLaunchDescription
 from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch_ros.actions import Node
+from launch.substitutions import Command
 from ament_index_python.packages import get_package_share_directory
 import os
 
 def generate_launch_description():
     pkg_dir = get_package_share_directory('echo_slam_encoder_tf')
 
-    robot_urdf = os.path.join(pkg_dir, 'urdf', 'robot.xacro')
+    # robot.xacro -> urdf로 파싱
+    robot_description_content = Command(['xacro ', os.path.join(pkg_dir, 'urdf', 'robot.xacro')])
+    robot_description = {'robot_description': robot_description_content}
+
+    urdf_path = os.path.join(pkg_dir, 'urdf', 'robot.xacro')  # 여긴 ros_gz_sim용
 
     return LaunchDescription([
 
@@ -19,19 +24,19 @@ def generate_launch_description():
             )
         ),
 
-        # 로봇 모델 스폰
+        # 로봇 상태 퍼블리셔
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
             output='screen',
-            parameters=[{'use_sim_time': True}],
-            arguments=[robot_urdf],
+            parameters=[robot_description, {'use_sim_time': True}]
         ),
 
+        # Gazebo에 로봇 스폰 (여긴 xacro 파일 경로 그대로 넘김 → ros_gz_sim이 내부에서 파싱 가능할 경우)
         Node(
             package='ros_gz_sim',
             executable='create',
-            arguments=['-name', 'my_robot', '-file', robot_urdf],
+            arguments=['-name', 'my_robot', '-file', urdf_path],
             output='screen'
         ),
 
@@ -39,7 +44,11 @@ def generate_launch_description():
         Node(
             package='controller_manager',
             executable='spawner',
-            arguments=['diff_drive_controller', '--param-file', os.path.join(pkg_dir, 'config', 'diff_drive_controller.yaml')],
+            arguments=[
+                'diff_drive_controller',
+                '--param-file',
+                os.path.join(pkg_dir, 'config', 'diff_drive_controller.yaml')
+            ],
             output='screen'
         ),
 
@@ -51,7 +60,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # 기존 odom 노드
+        # odom 노드
         Node(
             package='echo_slam_encoder_tf',
             executable='slam_encoder_odom_node',
@@ -59,7 +68,7 @@ def generate_launch_description():
             output='screen'
         ),
 
-        # SLAM Toolbox
+        # SLAM Toolbox 실행
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')
