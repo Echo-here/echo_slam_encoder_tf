@@ -5,7 +5,7 @@ diff_drive_controller:
     left_wheel_names: ["left_wheel_joint"]
     right_wheel_names: ["right_wheel_joint"]
 
-    wheel_separation: 0.3
+    wheel_separation: 0.426  # URDF와 일치시킴
     wheel_radius: 0.0575
 
     base_frame_id: base_link

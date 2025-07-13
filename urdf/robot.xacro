@@ -3,11 +3,11 @@
 
   <!-- 기본 파라미터 -->
   <xacro:property name="wheel_radius" value="0.0575"/>
-  <xacro:property name="wheel_width" value="0.02"/>
-  <xacro:property name="wheel_separation" value="0.3"/>
-  <xacro:property name="body_length" value="0.4"/>
-  <xacro:property name="body_width" value="0.3"/>
-  <xacro:property name="body_height" value="0.1"/>
+  <xacro:property name="wheel_width" value="0.03"/>
+  <xacro:property name="wheel_separation" value="0.426"/>
+  <xacro:property name="body_length" value="0.48"/>
+  <xacro:property name="body_width" value="0.42"/>
+  <xacro:property name="body_height" value="0.215"/>
 
   <!-- base_link -->
   <link name="base_link">
@@ -15,6 +15,9 @@
       <geometry>
         <box size="${body_length} ${body_width} ${body_height}"/>
       </geometry>
+      <material name="yellow">
+        <color rgba="1 1 0 1"/>
+      </material>
     </visual>
     <collision>
       <geometry>
@@ -30,32 +33,60 @@
   <!-- 왼쪽 바퀴 -->
   <link name="left_wheel_link">
     <visual>
+      <origin rpy="1.5708 0 0"/>
       <geometry>
         <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
       </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
     </visual>
+    <collision>
+      <origin rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
   </link>
 
   <joint name="left_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="left_wheel_link"/>
-    <origin xyz="0 ${wheel_separation/2} 0" rpy="0 0 0"/>
+    <origin xyz="0 ${wheel_separation/2} -${body_height/2 + wheel_radius}" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
   </joint>
 
   <!-- 오른쪽 바퀴 -->
   <link name="right_wheel_link">
     <visual>
+      <origin rpy="1.5708 0 0"/>
       <geometry>
         <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
       </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
     </visual>
+    <collision>
+      <origin rpy="1.5708 0 0"/>
+      <geometry>
+        <cylinder radius="${wheel_radius}" length="${wheel_width}"/>
+      </geometry>
+    </collision>
+    <inertial>
+      <mass value="1.0"/>
+      <inertia ixx="0.001" ixy="0.0" ixz="0.0" iyy="0.001" iyz="0.0" izz="0.001"/>
+    </inertial>
   </link>
 
   <joint name="right_wheel_joint" type="continuous">
     <parent link="base_link"/>
     <child link="right_wheel_link"/>
-    <origin xyz="0 -${wheel_separation/2} 0" rpy="0 0 0"/>
+    <origin xyz="0 -${wheel_separation/2} -${body_height/2 + wheel_radius}" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
   </joint>
 
@@ -65,6 +96,9 @@
       <geometry>
         <sphere radius="0.03"/>
       </geometry>
+      <material name="gray">
+        <color rgba="0.5 0.5 0.5 1"/>
+      </material>
     </visual>
   </link>
 
@@ -80,6 +114,9 @@
       <geometry>
         <cylinder radius="0.02" length="0.01"/>
       </geometry>
+      <material name="blue">
+        <color rgba="0 0 1 1"/>
+      </material>
     </visual>
   </link>
 
@@ -92,7 +129,7 @@
   <!-- ros2_control interface 선언 -->
   <ros2_control name="MyRobotHardware" type="system">
     <hardware>
-      <plugin>gazebo_ros2_control/GazeboSystem</plugin>
+      <plugin>gz_ros2_control/GazeboSimSystem</plugin>
     </hardware>
     <joint name="left_wheel_joint">
       <command_interface name="velocity"/>
@@ -106,7 +143,7 @@
     </joint>
   </ros2_control>
 
-  <!-- transmission 선언 (필수) -->
+  <!-- transmission 선언 -->
   <transmission name="left_wheel_trans">
     <type>transmission_interface/SimpleTransmission</type>
     <joint name="left_wheel_joint">
@@ -127,9 +164,11 @@
     </actuator>
   </transmission>
 
-  <!-- Gazebo 플러그인 삽입 (필수) -->
+  <!-- Gazebo 플러그인 삽입 -->
   <gazebo>
-    <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so"/>
+    <plugin filename="libgz_ros2_control-system.so" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
+      <parameters>/home/bitbyte08/Echo/slam_tb_ws/src/echo_slam_encoder_tf/config/diff_drive_controller.yaml</parameters>
+    </plugin>
   </gazebo>
 
 </robot>
