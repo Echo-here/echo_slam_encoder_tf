@@ -1,100 +1,109 @@
-from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, IncludeLaunchDescription
-from launch.launch_description_sources import PythonLaunchDescriptionSource
-from launch_ros.actions import Node
-from launch.actions import TimerAction
-from launch.substitutions import Command, LaunchConfiguration
-from ament_index_python.packages import get_package_share_directory
 import os
+from launch_ros.actions import Node
+from launch import LaunchDescription
+from launch.conditions import IfCondition
+from ament_index_python.packages import get_package_share_directory
+from launch.substitutions import LaunchConfiguration, PythonExpression
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.actions import IncludeLaunchDescription, DeclareLaunchArgument, GroupAction
 
 def generate_launch_description():
-    pkg_dir = get_package_share_directory('echo_slam_encoder_tf')
 
-    # robot.xacro -> urdf로 파싱
-    robot_description_content = Command(['xacro ', os.path.join(pkg_dir, 'urdf', 'robot.xacro')])
-    robot_description = {'robot_description': robot_description_content}
+    # Package name
+    package_name='echo_slam_encoder_tf'
 
-    return LaunchDescription([
-        # World 파일 인자 선언 (평면 world로 지정)
-        DeclareLaunchArgument(
-            name='world',
-            default_value=os.path.join(pkg_dir, 'worlds', 'world.sdf'),  # 평면 world 파일명
-            description='Gazebo world file'
-        ),
+    # Launch configurations
+    world = LaunchConfiguration('world')
+    rviz = LaunchConfiguration('rviz')
 
-        # Gazebo 설정 (world 포함)
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
-            ),
-            launch_arguments={'gz_args': ["-r","-s","-v1",LaunchConfiguration('world')]}.items()
-        ),
+    # Path to default world 
+    world_path = os.path.join(get_package_share_directory(package_name),'worlds', 'obstacles.world')
 
-        # Gazebo GUI 실행
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py')
-            ),
-            launch_arguments={'gz_args': ["-g"]}.items()
-        ),
+    # Launch Arguments
+    declare_world = DeclareLaunchArgument(
+        name='world', default_value=world_path,
+        description='Full path to the world model file to load')
+    
+    declare_rviz = DeclareLaunchArgument(
+        name='rviz', default_value='True',
+        description='Opens rviz is set to True')
 
-        # 로봇 상태 퍼블리셔
-        Node(
-            package='robot_state_publisher',
-            executable='robot_state_publisher',
-            output='screen',
-            parameters=[robot_description, {'use_sim_time': True}]
-        ),
-        
-        # Gazebo에 로봇 스폰 (URDF 문자열 직접 전달)
-        TimerAction(
-            period=5.0,
-            actions=[
-                Node(
-                    package='ros_gz_sim',
-                    executable='create',
-                    arguments=[
-                        '-name', 'my_robot',
-                        '-string', robot_description_content,
-                        '-z', '0.17'
-                    ],
-                    output='screen'
-                )
-            ]
-        ),
+    # Launch Robot State Publisher Node
+    urdf_path = os.path.join(get_package_share_directory(package_name),'urdf','robot.urdf.xacro')
+    rsp = IncludeLaunchDescription(
+                PythonLaunchDescriptionSource([os.path.join(
+                    get_package_share_directory(package_name),'launch','slam_gazebo_rsp.launch.py'
+                )]), launch_arguments={'use_sim_time': 'true', 'urdf': urdf_path}.items()
+    )
 
-        # 컨트롤러 매니저 실행
-        Node(
-            package='controller_manager',
-            executable='spawner',
-            arguments=[
-                'diff_drive_controller',
-                '--param-file',
-                os.path.join(pkg_dir, 'config', 'diff_drive_controller.yaml')
-            ],
-            output='screen'
-        ),
+    # Launch the gazebo server to initialize the simulation
+    gazebo_server = IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource([os.path.join(
+                        get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py'
+                    )]), launch_arguments={'gz_args': ['-r -s -v1 ', world], 'on_exit_shutdown': 'true'}.items()
+    )
 
-        # encoder_counts 발행 노드
-        Node(
-            package='echo_slam_encoder_tf',
-            executable='slam_encoder_gazebo_node',
-            name='slam_encoder_gazebo_node',
-            output='screen'
-        ),
+    # Always launch the gazebo client to visualize the simulation
+    gazebo_client = IncludeLaunchDescription(
+                    PythonLaunchDescriptionSource([os.path.join(
+                        get_package_share_directory('ros_gz_sim'), 'launch', 'gz_sim.launch.py'
+                    )]), launch_arguments={'gz_args': '-g '}.items()
+    )
 
-        # odom 노드
-        Node(
-            package='echo_slam_encoder_tf',
-            executable='slam_encoder_odom_node',
-            name='slam_encoder_odom_node',
-            output='screen'
-        ),
+    # Run the spawner node from the gazebo_ros package. 
+    spawn_diff_bot = Node(
+                        package='ros_gz_sim', 
+                        executable='create',
+                        arguments=['-topic', 'robot_description',
+                                   '-name', 'diff_bot',
+                                   '-z', '0.2'],
+                        output='screen'
+    )
 
-        # SLAM Toolbox 실행
-        IncludeLaunchDescription(
-            PythonLaunchDescriptionSource(
-                os.path.join(get_package_share_directory('slam_toolbox'), 'launch', 'online_async_launch.py')
+    # Launch the Gazebo-ROS bridge
+    bridge_params = os.path.join(get_package_share_directory(package_name),'config','gz_bridge.yaml')
+    ros_gz_bridge = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=[
+            '--ros-args',
+            '-p',
+            f'config_file:={bridge_params}',]
+    )
+    
+    # Launch Rviz with diff bot rviz file
+    rviz_config_file = os.path.join(get_package_share_directory(package_name), 'rviz', 'bot.rviz')
+    rviz2 = GroupAction(
+        condition=IfCondition(rviz),
+        actions=[Node(
+                    package='rviz2',
+                    executable='rviz2',
+                    arguments=['-d', rviz_config_file],
+                    output='screen',)]
+    )
+    
+    # Launch Slam-toolbox
+    slam_toolbox = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(
+                get_package_share_directory("slam_toolbox"),
+                "launch",
+                "online_async_launch.py"
             )
         ),
+        launch_arguments={"use_sim_time": "true"}.items()
+    )
+    # Launch them all!
+    return LaunchDescription([
+        # Declare launch arguments
+        declare_rviz,
+        declare_world,
+
+        # Launch the nodes
+        rviz2,
+        rsp,
+        gazebo_server,
+        gazebo_client,
+        ros_gz_bridge,
+        spawn_diff_bot
     ])
