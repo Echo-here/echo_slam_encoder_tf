@@ -32,20 +32,20 @@
          <pose> 0 0 0 0 0 0 </pose>
          <always_on>true</always_on>
          <visualize>true</visualize>
-         <update_rate>10</update_rate>
+         <update_rate>3</update_rate>
          <topic>scan</topic>
          <gz_frame_id>laser_frame</gz_frame_id>
          <lidar>
             <scan>
                <horizontal>
                <samples>360</samples>
-               <min_angle>-3.14</min_angle>
-               <max_angle>3.14</max_angle>
+               <min_angle>-180</min_angle>
+               <max_angle>180</max_angle>
                </horizontal>
             </scan>
             <range>
-               <min>0.3</min>
-               <max>12</max>
+               <min>0.1</min>
+               <max>10</max>
             </range>
          </lidar>
       </sensor>
