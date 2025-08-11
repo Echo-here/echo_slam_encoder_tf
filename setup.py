@@ -30,6 +30,7 @@ setup(
             'slam_encoder_odom_node = echo_slam_encoder_tf.slam_encoder_odom_node:main',
             'slam_encoder_dummy_node = echo_slam_encoder_tf.slam_encoder_dummy_node:main',
             'slam_encoder_gazebo_node = echo_slam_encoder_tf.slam_encoder_gazebo_node:main',
+            'slam_mqtt_nav2_goal_node = echo_slam_encoder_tf.slam_mqtt_nav2_goal_node:main' 
         ],
     },
 )
